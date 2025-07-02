@@ -7,7 +7,6 @@ from decimal import Decimal
 # --- Setup credentials ---
 PROJECT_ID = 'mie-gacoan-418408'      # ⬅️ Ganti dengan project ID kamu
 DATASET = 'sales_data'                # ⬅️ Ganti dengan dataset BQ kamu
-TABLE = 'esb_sales_recapitulation_report' # ⬅️ Ganti dengan table BQ kamu
 
 # --- BigQuery client ---
 import json
@@ -21,7 +20,8 @@ client = bigquery.Client(credentials=credentials, project=PROJECT_ID)
 
 st.title("📤 Upload File ESB to BigQuery")
 
-# --- Upload file ---
+file_type = st.selectbox("Pilih jenis file", ["Sales", "Menu"])
+
 uploaded_files = st.file_uploader(
     "Choose Excel file(s) (.xlsx)", 
     type="xlsx", 
@@ -33,33 +33,60 @@ if uploaded_files:
 
     try:
         for uploaded_file in uploaded_files:
-            df = pd.read_excel(uploaded_file, header=13, dtype=str)
+            filename = uploaded_file.name
 
-            # Drop rows tanpa Bill Number
-            df = df[df["Bill Number"].notna() & (df["Bill Number"].str.strip() != "")]
+            if file_type == "Sales":
+                TABLE = 'esb_sales_recapitulation_report'    
+                df = pd.read_excel(uploaded_file, header=13, dtype=str)
+    
+                # Drop rows tanpa Bill Number
+                df = df[df["Bill Number"].notna() & (df["Bill Number"].str.strip() != "")]
+    
+                numeric_columns = [
+                    "Pax Total", "Subtotal", "Menu Discount", "Bill Discount", "Voucher Discount",
+                    "Net Sales", "Service Charge Total", "Tax Total", "VAT Total", "Delivery Cost",
+                    "Order Fee", "Platform Fee", "Voucher Sales Total", "Rounding Total", "Grand Total"
+                ]
+    
+                # Convert ke float
+                for col in numeric_columns:
+                    df[col] = df[col].astype(float)
+    
+                # Convert kolom tanggal
+                date_columns = ["Sales Date", "Sales In Date", "Sales Out Date"]
+                for col in date_columns:
+                    df[col] = pd.to_datetime(df[col], errors="coerce").dt.date
+    
+                # Convert kolom waktu
+                time_columns = ["Sales In Time", "Sales Out Time"]
+                for col in time_columns:
+                    try:
+                        df[col] = pd.to_datetime(df[col], format="%H:%M:%S", errors="coerce").dt.time
+                    except:
+                        df[col] = pd.to_datetime(df[col], errors="coerce").dt.time
+                        
+            else:
+                TABLE = 'esb_menu_recapitulation_report'
+                df = pd.read_excel(uploaded_file, header=12, dtype=str)
 
-            numeric_columns = [
-                "Pax Total", "Subtotal", "Menu Discount", "Bill Discount", "Voucher Discount",
-                "Net Sales", "Service Charge Total", "Tax Total", "VAT Total", "Delivery Cost",
-                "Order Fee", "Platform Fee", "Voucher Sales Total", "Rounding Total", "Grand Total"
-            ]
+                # Extract tanggal dari nama file (format DDMMYYYY)
+                match = re.search(r'(\d{8})', filename)
+                if match:
+                    file_date_str = match.group(1)
+                    date_parsed = pd.to_datetime(file_date_str, format="%d%m%Y", errors="coerce").date()
+                else:
+                    date_parsed = None
 
-            # Convert ke float
-            for col in numeric_columns:
-                df[col] = df[col].astype(float)
+                df["date"] = date_parsed
 
-            # Convert kolom tanggal
-            date_columns = ["Sales Date", "Sales In Date", "Sales Out Date"]
-            for col in date_columns:
-                df[col] = pd.to_datetime(df[col], errors="coerce").dt.date
+                numeric_columns = [
+                    "Qty", "Unit Price", "Subtotal", "Menu Discount", "Total", "Bill Discount Total",
+                    "Net Sales Total", "Service Charge Total", "Tax Total", "VAT Total", "Grand Total"
+                ]
 
-            # Convert kolom waktu
-            time_columns = ["Sales In Time", "Sales Out Time"]
-            for col in time_columns:
-                try:
-                    df[col] = pd.to_datetime(df[col], format="%H:%M:%S", errors="coerce").dt.time
-                except:
-                    df[col] = pd.to_datetime(df[col], errors="coerce").dt.time
+                for col in numeric_columns:
+                    df[col] = df[col].astype(float)
+
 
             st.success(f"✅ File **{uploaded_file.name}** successfully processed!")
             st.write(df.head(5))
@@ -79,6 +106,7 @@ if uploaded_files:
         mode = st.radio("Upload mode", ["Append", "Overwrite"])
 
         if st.button("Upload to BigQuery"):
+            client = bigquery.Client(credentials=credentials, project=PROJECT_ID)
             table_id = f"{PROJECT_ID}.{DATASET}.{TABLE}"
 
             # Setup config
