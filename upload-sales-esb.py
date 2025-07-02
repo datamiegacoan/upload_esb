@@ -79,7 +79,7 @@ if uploaded_files:
 
             elif file_type == "Service Time":
                 TABLE = 'esb_menu_completion_summary_report'
-                df = pd.read_excel(uploaded_file, header=11, dtype=str)
+                df = pd.read_excel(uploaded_file, header=10, dtype=str)
 
                 # Convert Sales Date in ke datetime
                 df["Sales Date in"] = pd.to_datetime(df["Sales Date in"], errors="coerce")
