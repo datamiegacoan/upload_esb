@@ -10,12 +10,13 @@ DATASET = 'sales_data'                # ⬅️ Ganti dengan dataset BQ kamu
 TABLE = 'esb_sales_recapitulation_report' # ⬅️ Ganti dengan table BQ kamu
 
 # --- BigQuery client ---
-import os
 import json
+import streamlit as st
+from google.oauth2 import service_account
 
-# Baca JSON dari environment
-service_account_info = json.loads(os.environ["GCP_SERVICE_ACCOUNT_JSON"])
+service_account_info = st.secrets["GCP_SERVICE_ACCOUNT"]
 credentials = service_account.Credentials.from_service_account_info(service_account_info)
+
 client = bigquery.Client(credentials=credentials, project=PROJECT_ID)
 
 st.title("📤 Upload File ESB to BigQuery")
