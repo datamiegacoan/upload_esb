@@ -1,0 +1,9 @@
+# Ignore Python cache
+__pycache__/
+*.pyc
+
+# Ignore virtual environments
+.venv/
+
+# Ignore credentials
+mie-gacoan-418408-d7d17b38e801.json
