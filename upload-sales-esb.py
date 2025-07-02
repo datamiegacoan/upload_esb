@@ -3,6 +3,7 @@ import pandas as pd
 from google.cloud import bigquery
 from google.oauth2 import service_account
 from decimal import Decimal
+import re
 
 # --- Setup credentials ---
 PROJECT_ID = 'mie-gacoan-418408'      # ⬅️ Ganti dengan project ID kamu
