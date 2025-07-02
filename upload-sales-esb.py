@@ -21,7 +21,7 @@ client = bigquery.Client(credentials=credentials, project=PROJECT_ID)
 
 st.title("📤 Upload File ESB to BigQuery")
 
-file_type = st.selectbox("Pilih jenis file", ["Sales", "Menu", "Service Time"])
+file_type = st.selectbox("Pilih jenis file", ["Sales", "Menu", "Service time"])
 
 uploaded_files = st.file_uploader(
     "Choose Excel file(s) (.xlsx)", 
