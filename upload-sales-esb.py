@@ -81,7 +81,7 @@ if uploaded_files:
                 df["date"] = date_parsed
 
                 numeric_columns = [
-                    "Qty", "Unit Price", "Subtotal", "Menu Discount Total", "Bill Discount Total", "Net Sales Total", 
+                    "Unit Price", "Subtotal", "Menu Discount Total", "Bill Discount Total", "Net Sales Total", 
                     "Service Charge Total", "Tax Total", "VAT Total", "Grand Total"
                 ]
 
