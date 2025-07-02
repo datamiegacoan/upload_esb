@@ -5,13 +5,17 @@ from google.oauth2 import service_account
 from decimal import Decimal
 
 # --- Setup credentials ---
-SERVICE_ACCOUNT_FILE = 'mie-gacoan-418408-d7d17b38e801.json'  # ⬅️ ganti dengan file JSON-mu
 PROJECT_ID = 'mie-gacoan-418408'      # ⬅️ Ganti dengan project ID kamu
 DATASET = 'sales_data'                # ⬅️ Ganti dengan dataset BQ kamu
 TABLE = 'esb_sales_recapitulation_report' # ⬅️ Ganti dengan table BQ kamu
 
 # --- BigQuery client ---
-credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE)
+import os
+import json
+
+# Baca JSON dari environment
+service_account_info = json.loads(os.environ["GCP_SERVICE_ACCOUNT_JSON"])
+credentials = service_account.Credentials.from_service_account_info(service_account_info)
 client = bigquery.Client(credentials=credentials, project=PROJECT_ID)
 
 st.title("📤 Upload File ESB to BigQuery")
