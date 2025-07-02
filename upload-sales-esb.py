@@ -21,7 +21,7 @@ client = bigquery.Client(credentials=credentials, project=PROJECT_ID)
 
 st.title("📤 Upload File ESB to BigQuery")
 
-file_type = st.selectbox("Pilih jenis file", ["Sales", "Menu"])
+file_type = st.selectbox("Pilih jenis file", ["Sales", "Menu", "Service Time"])
 
 uploaded_files = st.file_uploader(
     "Choose Excel file(s) (.xlsx)", 
@@ -66,7 +66,7 @@ if uploaded_files:
                     except:
                         df[col] = pd.to_datetime(df[col], errors="coerce").dt.time
                         
-            else:
+             elif file_type == "Menu":
                 TABLE = 'esb_menu_recapitulation_report'
                 df = pd.read_excel(uploaded_file, header=12, dtype=str)
 
@@ -87,6 +87,28 @@ if uploaded_files:
 
                 for col in numeric_columns:
                     df[col] = df[col].astype(float)
+
+            elif file_type == "Service Time":
+                TABLE = 'esb_menu_completion_summary_report'
+                df = pd.read_excel(uploaded_file, header=11, dtype=str)
+
+                # Convert Sales Date in ke datetime
+                df["Sales Date in"] = pd.to_datetime(df["Sales Date in"], errors="coerce")
+
+                # Convert kolom durasi
+                duration_columns = ["Kitchen Process", "Checker Qty", "Checker Process", "Total Process"]
+                for col in duration_columns:
+                    df[col] = pd.to_timedelta(df[col], errors="coerce")
+
+                numeric_columns = [
+                    "Kitchen Qty","Checker Qty"]
+
+                for col in numeric_columns:
+                    df[col] = df[col].astype(float)
+
+            else:
+                st.error("❌ Jenis file tidak dikenali.")
+                continue
 
 
             st.success(f"✅ File **{uploaded_file.name}** successfully processed!")
