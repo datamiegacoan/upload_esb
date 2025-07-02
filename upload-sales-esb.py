@@ -82,7 +82,7 @@ if uploaded_files:
                 df = pd.read_excel(uploaded_file, header=10, dtype=str)
 
                 # Convert Sales Date in ke datetime
-                df["Sales Date in"] = pd.to_datetime(df["Sales Date In"], errors="coerce")
+                df["Sales Date In"] = pd.to_datetime(df["Sales Date In"], errors="coerce")
 
                 # Convert kolom durasi
                 duration_columns = ["Kitchen Process", "Checker Process", "Total Process"]
