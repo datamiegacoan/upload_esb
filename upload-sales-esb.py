@@ -88,6 +88,7 @@ if uploaded_files:
                 duration_columns = ["Kitchen Process", "Checker Process", "Total Process"]
                 for col in duration_columns:
                     df[col] = pd.to_timedelta(df[col], errors="coerce")
+                    df[col] = df[col].apply(lambda x: str(x).split(" ")[-1] if pd.notnull(x) else None)
 
                 numeric_columns = ["Kitchen Qty", "Checker Qty"]
                 for col in numeric_columns:
