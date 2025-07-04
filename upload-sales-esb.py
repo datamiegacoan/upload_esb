@@ -58,21 +58,13 @@ if uploaded_files:
             elif file_type == "Menu":
                 TABLE = 'esb_menu_recapitulation_report'
                 df = pd.read_excel(uploaded_file, header=12, dtype=str)
-
-                # Extract tanggal dari nama file (format DDMMYYYY)
-                match = re.search(r'(\d{8})', filename)
-                if match:
-                    file_date_str = match.group(1)
-                    date_parsed = pd.to_datetime(file_date_str, format="%d%m%Y", errors="coerce").date()
-                else:
-                    date_parsed = None
-
-                df["date"] = date_parsed
+                
+                date_columns = ["Sales Date"]
+                for col in date_columns:
+                    df[col] = pd.to_datetime(df[col], errors="coerce").dt.date
 
                 numeric_columns = [
-                    "Unit Price", "Subtotal", "Menu Discount Total", "Bill Discount Total", "Net Sales Total",
-                    "Service Charge Total", "Tax Total", "VAT Total", "Grand Total"
-                ]
+                    Qty", "Subtotal", "Service Charge", "Tax Total", "VAT Total", "Total"]
 
                 for col in numeric_columns:
                     df[col] = df[col].astype(float)
