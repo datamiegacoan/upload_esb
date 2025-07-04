@@ -64,7 +64,7 @@ if uploaded_files:
                     df[col] = pd.to_datetime(df[col], errors="coerce").dt.date
 
                 numeric_columns = [
-                    Qty", "Subtotal", "Service Charge", "Tax Total", "VAT Total", "Total"]
+                    "Qty", "Subtotal", "Service Charge", "Tax Total", "VAT Total", "Total"]
 
                 for col in numeric_columns:
                     df[col] = df[col].astype(float)
