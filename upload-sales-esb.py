@@ -15,7 +15,7 @@ credentials = service_account.Credentials.from_service_account_info(service_acco
 client = bigquery.Client(credentials=credentials, project=PROJECT_ID)
 
 
-st.title("🟢 Run BigQuery (By Button)")
+st.title("🟢 Run BigQuery Update")
 
 query1 = """
 --combine smart and esb prodmix ------------------------------------------------------------------------------------------------------------------------------------------
