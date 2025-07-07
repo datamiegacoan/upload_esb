@@ -18,46 +18,146 @@ client = bigquery.Client(credentials=credentials, project=PROJECT_ID)
 st.title("🟢 Run BigQuery (By Button)")
 
 query1 = """
-CREATE OR REPLACE EXTERNAL TABLE `mie-gacoan-418408.data_stores.masterops`
-OPTIONS (
-  format = 'GOOGLE_SHEETS',
-  uris = ['https://docs.google.com/spreadsheets/d/10EL0C8_HAllt432EDOdPXC8M3qQJ8f4Z0DTT4cRLljI/edit?gid=652295010#gid=652295010'],
-  skip_leading_rows = 1
-);
+--combine smart and esb prodmix ------------------------------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE TABLE `mie-gacoan-418408.sales_data.data_combined_menu` AS
+with cte_1 as (
+select
+  prodmix.Date,
+  prodmix.Code,
+  prodmix.product,
+  prodmix.QTY,
+  category.product_cleaned,
+  category.category,
+  category.product_cleaned_2
+from `mie-gacoan-418408.sales_data.productmix` as prodmix
+left join `mie-gacoan-418408.data_stores.prodmix_category_named` as category
+on LOWER(REGEXP_REPLACE(TRIM(prodmix.Product), r'[\s]+', ' ')) 
+   = LOWER(REGEXP_REPLACE(TRIM(category.product), r'[\s]+', ' '))
+where Date <= '2025-05-31' 
+),
 
-CREATE OR REPLACE TABLE `mie-gacoan-418408.data_stores.master_data` AS
-SELECT 
-  NO_CODE,
-  NEW_CODE_STORE,
-  PARSE_DATE('%d %B %Y', OPEN_STORE) AS OPEN_STORE,
-  STORE,
-  RM,
-  CITY,
-  AM,
-  NAMA_KOMPLAIN,
-  EMAIL_RESTO,
-  ALAMAT,
-  PROVINSI,
-  KOTA,
-  LATITUDE__LONGITUDE,
-  JAVA___OUTER_JAVA,  
-  TYPE_KITCHEN,
-  ACTIVE,
-  ACTIVE_UNTIL,
-  STATUS,
-  LINK_GOOGLE_REVIEW,
-  NAMA_SOC,
-  NAMA_GIS,
-  NAMA_OPS,
-  EMAIL_AM,
-  EMAIL_RM,
-  MANDATORY_EMAIL,
-  CODE_GIS,
-  _24H,
-  AREA_HEAD,
-  EMAIL_HEAD,
-FROM 
-  `mie-gacoan-418408.data_stores.masterops`
+cte_2 as(
+select
+  cte_1.Date,
+  cte_1.Code,
+  cte_1.product_cleaned,
+  cte_1.category,
+  cte_1.product_cleaned_2,
+  sum(cte_1.QTY) as Qty
+from cte_1
+group by
+  cte_1.Date,
+  cte_1.Code,
+  cte_1.product_cleaned,
+  cte_1.category,
+  cte_1.product_cleaned_2
+),
+
+cte_3 as (
+select
+  prodmix.Branch,
+  prodmix.`Sales Date` as Date,
+  prodmix.Qty,
+  TRIM(prodmix.`Menu Name`) as menu,
+  category.product_cleaned,
+  category.category,
+  category.product_cleaned_2
+from `mie-gacoan-418408.sales_data.esb_menu_recapitulation_report` as prodmix
+left join `mie-gacoan-418408.data_stores.prodmix_esb_category_named` as category
+on LOWER(REGEXP_REPLACE(TRIM(prodmix.`Menu Name`), r'[\s]+', ' ')) 
+   = LOWER(REGEXP_REPLACE(TRIM(category.product), r'[\s]+', ' '))
+),
+
+
+cte_4 as (
+select
+  cte_3.Date,
+  master_data.NEW_CODE_STORE as Code,
+  cte_3.product_cleaned,
+  cte_3.category,
+  cte_3.product_cleaned_2,
+  sum(cte_3.QTY) as Qty
+from cte_3
+left join `mie-gacoan-418408.data_stores.master_data` AS master_data
+on cte_3.Branch = master_data.CODE_GIS
+group by
+  cte_3.Date,
+  Code,
+  cte_3.product_cleaned,
+  cte_3.category,
+  cte_3.product_cleaned_2
+)
+
+select Date, Code, product_cleaned, category, product_cleaned_2, Qty
+from cte_2
+UNION ALL
+select Date, Code, product_cleaned, category, product_cleaned_2, Qty
+from cte_4
+order by Date desc
+;
+
+-- prodmix1 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE TABLE `mie-gacoan-418408.dashboard_sales.prodmix1` AS
+select 
+    menu.date,
+    menu.Code,
+    menu.product_cleaned,
+    menu.category,
+    menu.product_cleaned_2,
+    menu.Qty,
+    master_data.OPEN_STORE,
+    master_data.NAMA_OPS,
+    master_data.AREA_HEAD,
+    master_data.RM,
+    master_data.CITY,
+    master_data.AM,
+    master_data.PROVINSI,
+    master_data.KOTA,
+    master_data.JAVA___OUTER_JAVA,
+    master_data.TYPE_KITCHEN,
+    master_data.STATUS
+from  `mie-gacoan-418408.sales_data.data_combined_menu` as menu
+inner join `mie-gacoan-418408.data_stores.master_data` AS master_data
+ON menu.Code = master_data.NEW_CODE_STORE
+;
+
+-- prodmix1 per category -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE TABLE `mie-gacoan-418408.dashboard_sales.prodmix2` AS
+select 
+    menu.date,
+    menu.Code,
+    menu.category,
+    sum(menu.Qty) as Qty,
+    master_data.OPEN_STORE,
+    master_data.NAMA_OPS,
+    master_data.AREA_HEAD,
+    master_data.RM,
+    master_data.CITY,
+    master_data.AM,
+    master_data.PROVINSI,
+    master_data.KOTA,
+    master_data.JAVA___OUTER_JAVA,
+    master_data.TYPE_KITCHEN,
+    master_data.STATUS
+from  `mie-gacoan-418408.sales_data.data_combined_menu` as menu
+inner join `mie-gacoan-418408.data_stores.master_data` AS master_data
+ON menu.Code = master_data.NEW_CODE_STORE
+group by 
+    menu.date,
+    menu.Code,
+    menu.category,
+    master_data.OPEN_STORE,
+    master_data.NAMA_OPS,
+    master_data.AREA_HEAD,
+    master_data.RM,
+    master_data.CITY,
+    master_data.AM,
+    master_data.PROVINSI,
+    master_data.KOTA,
+    master_data.JAVA___OUTER_JAVA,
+    master_data.TYPE_KITCHEN,
+    master_data.STATUS
 ;
 """
 
@@ -734,14 +834,13 @@ order by date_daily desc
 
 """
 
-if st.button("Run Query 1 - Update Master Ops"):
+if st.button("Run Query 1 - Update Menu"):
     with st.spinner("Running Query 1..."):
         try:
             client.query(query1).result()
             st.success("✅ Query berhasil dijalankan!")
         except Exception as e:
             st.error(f"❌ Query gagal: {e}")
-        st.success("✅ Query 1 selesai!")
 
 if st.button("Run Query 2 - Update Sales"):
     with st.spinner("Running Query 2..."):
@@ -750,7 +849,6 @@ if st.button("Run Query 2 - Update Sales"):
             st.success("✅ Query berhasil dijalankan!")
         except Exception as e:
             st.error(f"❌ Query gagal: {e}")
-        st.success("✅ Query 2 selesai!")
 
 
 
