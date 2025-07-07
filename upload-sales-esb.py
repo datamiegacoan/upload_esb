@@ -736,12 +736,20 @@ order by date_daily desc
 
 if st.button("Run Query 1 - Update Master Ops"):
     with st.spinner("Running Query 1..."):
-        client.query(query1).result()
+        try:
+            client.query(query1).result()
+            st.success("✅ Query berhasil dijalankan!")
+        except Exception as e:
+            st.error(f"❌ Query gagal: {e}")
         st.success("✅ Query 1 selesai!")
 
 if st.button("Run Query 2 - Update Sales"):
     with st.spinner("Running Query 2..."):
-        client.query(query2).result()
+        try:
+            client.query(query2).result()
+            st.success("✅ Query berhasil dijalankan!")
+        except Exception as e:
+            st.error(f"❌ Query gagal: {e}")
         st.success("✅ Query 2 selesai!")
 
 
